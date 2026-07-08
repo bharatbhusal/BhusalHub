@@ -1,0 +1,32 @@
+name: Validate.Build.web
+
+on:
+  push:
+    branches: [develop]
+    paths:
+      - src/web/**
+  pull_request:
+    branches: [develop]
+    paths:
+      - src/web/**
+
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: src/web
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: src/web/package-lock.json
+      - name: Install
+        run: npm ci
+      - name: Lint
+        run: npx tsc --noEmit
+      - name: Build
+        run: npm run build

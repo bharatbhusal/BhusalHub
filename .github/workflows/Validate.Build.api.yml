@@ -1,0 +1,32 @@
+name: Validate.Build.api
+
+on:
+  push:
+    branches: [develop]
+    paths:
+      - src/api/**
+      - tests/api/**
+  pull_request:
+    branches: [develop]
+    paths:
+      - src/api/**
+      - tests/api/**
+
+jobs:
+  api:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: src/api
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+      - name: Restore
+        run: dotnet restore
+      - name: Build
+        run: dotnet build --no-restore --configuration Release
+      - name: Test
+        run: dotnet test ../../tests/api/BhusalHub.Tests.csproj --configuration Release --verbosity normal

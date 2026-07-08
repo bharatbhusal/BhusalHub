@@ -1,0 +1,80 @@
+volumes:
+  bh_db:
+
+networks:
+  bhusalhub-network:
+    external: true
+
+services:
+  api:
+    build:
+      context: ../..
+      dockerfile: infra/docker/Dockerfile.api
+    image: api:latest
+    container_name: api
+    restart: unless-stopped
+    networks:
+      - bhusalhub-network
+    environment:
+      - ASPNETCORE_URLS=http://0.0.0.0:8080
+      - ASPNETCORE_ENVIRONMENT=Production
+      - Database__Path=/data/db/bhusalhub.db
+      - Jwt__Key=3064258e4fd49240eab7f1f505eac3710bd2c507ebe5754998698adcdf46d2cb
+      - Jwt__Issuer=bhusalhub-identity
+      - Jwt__Audience=bhusalhub-services
+      - Jwt__ExpireDays=30
+    volumes:
+      - bh_db:/data/db
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:8080/api/health"]
+      interval: 30s
+      timeout: 3s
+      start_period: 15s
+      retries: 3
+
+  messages:
+    build:
+      context: ../..
+      dockerfile: infra/docker/Dockerfile.messages
+    image: messages:latest
+    container_name: messages
+    restart: unless-stopped
+    networks:
+      - bhusalhub-network
+    environment:
+      - ASPNETCORE_URLS=http://0.0.0.0:8081
+      - ASPNETCORE_ENVIRONMENT=Production
+      - Jwt__Key=3064258e4fd49240eab7f1f505eac3710bd2c507ebe5754998698adcdf46d2cb
+      - Jwt__Issuer=bhusalhub-identity
+      - Jwt__Audience=bhusalhub-services
+
+  web:
+    build:
+      context: ../..
+      dockerfile: infra/docker/Dockerfile.frontend
+    image: web:latest
+    container_name: web
+    restart: unless-stopped
+    networks:
+      - bhusalhub-network
+    depends_on:
+      - api
+
+  gateway:
+    image: nginx:alpine
+    container_name: gateway
+    restart: unless-stopped
+    networks:
+      - bhusalhub-network
+    ports:
+      - "443:443"
+      - "80:80"
+    volumes:
+      - ../../infra/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      api:
+        condition: service_healthy
+      messages:
+        condition: service_started
+      web:
+        condition: service_started
