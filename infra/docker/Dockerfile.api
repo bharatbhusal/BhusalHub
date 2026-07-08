@@ -1,0 +1,22 @@
+FROM mcr.microsoft.com/dotnet/sdk:9.0-alpine AS build
+WORKDIR /src
+
+COPY src/backend/BhusalHub.Core/BhusalHub.Core.csproj BhusalHub.Core/
+COPY src/backend/BhusalHub.Data/BhusalHub.Data.csproj BhusalHub.Data/
+COPY src/backend/BhusalHub.Api/BhusalHub.Api.csproj BhusalHub.Api/
+RUN dotnet restore BhusalHub.Api/BhusalHub.Api.csproj
+
+COPY src/backend/ .
+RUN dotnet publish BhusalHub.Api/BhusalHub.Api.csproj \
+    --configuration Release \
+    --output /app \
+    --runtime linux-arm64 \
+    --self-contained true \
+    -p:PublishTrimmed=true \
+    -p:PublishSingleFile=true
+
+FROM mcr.microsoft.com/dotnet/runtime-deps:9.0-alpine AS runtime
+WORKDIR /app
+COPY --from=build /app .
+EXPOSE 8080
+ENTRYPOINT ["./BhusalHub.Api"]
