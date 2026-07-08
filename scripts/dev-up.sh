@@ -4,12 +4,12 @@ set -euo pipefail
 echo "Starting BhusalHub development environment..."
 
 echo "Starting backend..."
-cd src/backend
+cd src/api
 dotnet run --project BhusalHub.Api/BhusalHub.Api.csproj &
 BACKEND_PID=$!
 
 echo "Starting frontend..."
-cd ../frontend
+cd ../web
 npm install --silent
 npm run dev &
 FRONTEND_PID=$!
